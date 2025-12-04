@@ -1,1 +1,724 @@
-test
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ネオ脳内スキャンメーカー</title>
+    <!-- Tailwind CSSの読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* カスタムスタイルとTailwind設定の上書き */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=M+PLUS+Rounded+1c:wght@700&display=swap');
+        
+        :root {
+            --neon-pink: #ff33cc;
+            --neon-blue: #33ccff;
+            --bg-dark: #1f2937;
+        }
+
+        body {
+            font-family: 'Inter', 'M PLUS Rounded 1c', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .neon-glow {
+            box-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-pink), 0 0 20px var(--neon-blue);
+        }
+
+        .neon-button {
+            color: var(--neon-pink);
+            border: 2px solid var(--neon-pink);
+            background-color: rgba(255, 51, 204, 0.1);
+            transition: all 0.2s;
+            text-shadow: 0 0 5px var(--neon-pink);
+        }
+
+        .neon-button:hover {
+            color: var(--bg-dark);
+            background-color: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+        }
+        
+        .share-button {
+            background-color: #000000;
+            color: white;
+            border: 1px solid #333;
+            transition: all 0.2s;
+        }
+        .share-button:hover {
+            background-color: #1a1a1a;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* 脳内表示エリアのスタイル */
+        #result-brain {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background-color: #000; 
+            border: 3px solid var(--neon-blue);
+            position: relative;
+            margin: 20px auto;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px var(--neon-blue), 0 0 25px var(--neon-blue);
+            /* 背景画像はJSで設定 */
+            background-size: cover;
+            background-position: center;
+        }
+        
+        /* 脳内スキャン風オーバーレイ */
+        #result-brain::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+                radial-gradient(circle, transparent 60%, rgba(0, 0, 50, 0.8) 100%);
+            background-size: 20px 20px, 20px 20px, 100% 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .brain-element {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            text-align: center;
+            padding: 2px;
+            opacity: 0.95;
+            transition: transform 0.5s ease-out, opacity 0.3s;
+            cursor: default;
+            z-index: 10;
+            /* 文字を見やすくするためのシャドウ */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            line-height: 1.1;
+            word-break: break-all;
+        }
+
+        .brain-element:hover {
+            opacity: 1;
+            z-index: 20;
+            transform: scale(1.1);
+        }
+
+        /* --- スキャンアニメーション用スタイル --- */
+        @keyframes scan-beam-anim {
+            0% { top: 0%; opacity: 0.5; box-shadow: 0 0 10px var(--neon-blue); }
+            50% { top: 100%; opacity: 1; box-shadow: 0 0 30px var(--neon-pink); }
+            100% { top: 0%; opacity: 0.5; box-shadow: 0 0 10px var(--neon-blue); }
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        @keyframes pulse-brain {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+        
+        @keyframes rainbow-border {
+            0% { border-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+            50% { border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+            100% { border-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink); }
+        }
+
+        .scan-beam {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-blue), #fff, var(--neon-pink));
+            animation: scan-beam-anim 1.5s linear infinite;
+            z-index: 20;
+        }
+
+        .scanning-image-container {
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 20px var(--neon-blue);
+            animation: glitch-anim 0.3s infinite;
+        }
+        
+        .promo-card {
+            animation: rainbow-border 3s infinite linear;
+        }
+        
+        /* オーバーレイ表示時の背景ぼかし */
+        .blur-bg {
+            filter: blur(5px);
+            pointer-events: none;
+        }
+        
+        /* アニメーションユーティリティ */
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex flex-col items-center justify-start min-h-screen pt-10">
+
+    <div id="main-content" class="w-full max-w-4xl p-4 sm:p-6 md:p-10 bg-gray-800 rounded-xl neon-glow transition-all duration-300">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-blue-400" style="text-shadow: 0 0 10px rgba(255, 51, 204, 0.6);">
+            🧠 ネオ脳内スキャンメーカー 💡
+        </h1>
+        
+        <!-- 入力画面 (Input Screen) -->
+        <div id="input-screen">
+            <p class="text-center text-gray-400 mb-8 text-sm sm:text-base">画像と名前を入力して、あなたの脳内（インターネットソウル）を解析しよう！</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- 名前入力 -->
+                <div class="lg:col-span-2">
+                    <label for="vtuber-name" class="block text-sm font-medium mb-2 text-pink-300">活動名（ハンドルネーム）</label>
+                    <input type="text" id="vtuber-name" placeholder="例: 宇宙最強クリエイター" class="w-full p-3 rounded-lg bg-gray-700 border border-pink-500 focus:ring-2 focus:ring-blue-500 outline-none text-white transition duration-150" value="ネオクリエイター">
+                </div>
+
+                <!-- 画像アップロード -->
+                <div class="lg:col-span-1">
+                    <label for="vtuber-image" class="block text-sm font-medium mb-2 text-pink-300">画像アップロード</label>
+                    <div class="flex items-center space-x-4">
+                        <!-- 画像プレビュー -->
+                        <div id="image-preview" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-blue-500 flex items-center justify-center overflow-hidden bg-gray-700 flex-shrink-0 bg-cover bg-center">
+                            <span class="text-xs text-gray-400">画像</span>
+                        </div>
+                        <input type="file" id="vtuber-image" accept="image/*" class="hidden" onchange="previewImage(event)">
+                        <button onclick="document.getElementById('vtuber-image').click()" class="flex-grow p-3 sm:p-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-bold transition duration-150 text-sm sm:text-base">
+                            画像を選択
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- スキャン実行ボタン -->
+            <button id="scan-button" class="neon-button w-full p-4 text-xl font-bold rounded-xl mb-6" onclick="startScan()">
+                ✨ 脳内をスキャンする！ ✨
+            </button>
+            <p class="text-xs text-center text-gray-500">※画像はブラウザ内でのみ処理され、外部には送信されません。</p>
+        </div>
+
+        <!-- 結果画面 (Result Screen) - 初期は非表示 -->
+        <div id="result-screen" class="hidden animate-fade-in">
+            <h2 id="result-title" class="text-2xl sm:text-3xl font-bold text-center mb-6 text-yellow-300" style="text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);"></h2>
+            
+            <div class="flex flex-col md:flex-row gap-6 md:gap-8 mb-8">
+                <!-- 脳内グラフ (左側) -->
+                <div class="md:w-1/2 flex flex-col items-center">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-3 text-blue-300 border-b border-blue-800 pb-1 w-full text-center">スキャン結果</h3>
+                    <div id="result-brain" class="relative">
+                        <!-- ここに脳内要素が配置されます -->
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">※画像はあなたの脳内イメージです</p>
+                </div>
+
+                <!-- 構成要素リスト (右側) -->
+                <div class="md:w-1/2">
+                    <h3 class="text-lg sm:text-xl font-semibold mb-3 text-pink-300 border-b border-pink-800 pb-1 text-center md:text-left">成分詳細</h3>
+                    <div id="result-list" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- ここに結果リストが挿入されます -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクションボタンエリア -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <!-- Twitterシェアボタン -->
+                <button onclick="shareOnTwitter()" class="share-button w-full sm:w-auto px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <i class="fab fa-x-twitter text-xl"></i> 結果をポストする
+                </button>
+                
+                <!-- リセットボタン -->
+                <button onclick="resetApp()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-700 hover:bg-gray-600 text-white font-bold border border-gray-500 transition duration-150">
+                    🔄 もう一度スキャン
+                </button>
+            </div>
+            
+            <!-- イベント宣伝エリア (無許可コラボ) -->
+            <div class="mt-8 border-t border-gray-700 pt-6">
+                <div class="promo-card bg-gray-900/80 border border-pink-500 rounded-xl p-4 sm:p-6 text-center relative overflow-hidden group">
+                    <!-- 背景のキラキラ -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-500/5 to-transparent animate-pulse pointer-events-none"></div>
+                    
+                    <p class="text-xs text-pink-400 font-bold mb-2 tracking-widest uppercase">⚠️ Special Unofficial Collaboration ⚠️</p>
+                    
+                    <!-- イベントサムネイル画像 -->
+                    <div class="mb-4 relative inline-block">
+                        <img src="https://cluster-file-storage.imgix.net/uploads/group_2b8ac7ce1129d3366d2f78c5fe/f5522665-923a-4b04-aeea-d4c8695dabb8/669451ff-c540-4141-93ed-9678b207b1ac.png" 
+                             alt="イベントサムネイル" 
+                             class="w-full max-w-[300px] mx-auto rounded-lg border-2 border-pink-500/30 shadow-[0_0_15px_rgba(236,72,153,0.3)] transition-transform duration-300 group-hover:scale-105">
+                        <!-- 画像上の装飾 -->
+                        <div class="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold px-2 py-1 rounded-full transform rotate-12 shadow-md">
+                            CHECK!
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl sm:text-2xl font-bold text-white mb-1">実は難しくない！「つくる」の源流</h3>
+                    <p class="text-sm text-gray-300 mb-4">〜かわしぃの脳内が見れるイベント〜</p>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div class="bg-gray-800 px-4 py-2 rounded-lg border border-blue-500/30 text-blue-300">
+                            <i class="far fa-clock mr-2"></i>2025/12/26（金）OPEN 21:00
+                        </div>
+                        <a href="https://cluster.mu/e/a0ba013b-88b0-4553-9562-cf95c7f9610d" target="_blank" class="inline-flex items-center justify-center bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold py-2 px-6 rounded-full transition transform hover:scale-105 shadow-lg shadow-pink-500/30">
+                            イベント会場へGO! <i class="fas fa-external-link-alt ml-2 text-sm"></i>
+                        </a>
+                    </div>
+                    <p class="text-[10px] text-gray-600 mt-2">※このアプリはイベント公認ではありませんが、勝手に応援しています！</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- メッセージボックス -->
+        <div id="message-box" class="fixed bottom-5 right-5 p-3 rounded-lg shadow-lg bg-red-600 text-white hidden z-50"></div>
+    </div>
+
+    <!-- スキャン演出用オーバーレイ (初期は非表示) -->
+    <div id="scan-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 hidden flex-col">
+        <div class="relative w-64 h-64 sm:w-80 sm:h-80 scanning-image-container rounded-xl bg-gray-800">
+            <!-- スキャン対象画像 -->
+            <img id="scan-target-img" src="" class="absolute inset-0 w-full h-full object-cover opacity-60" alt="Scan Target">
+            
+            <!-- 脳のワイヤーフレーム風オーバーレイ (SVG) -->
+            <div class="absolute inset-0 flex items-center justify-center z-10" style="animation: pulse-brain 0.5s infinite alternate;">
+                <svg viewBox="0 0 100 100" class="w-4/5 h-4/5 fill-current text-pink-500 opacity-50">
+                    <path d="M50 15 C30 15 15 30 15 50 C15 70 30 85 50 85 C70 85 85 70 85 50 C85 30 70 15 50 15 M30 40 C35 35 45 35 50 40 C55 35 65 35 70 40 M30 60 C35 65 45 65 50 60 C55 65 65 65 70 60" 
+                          stroke="currentColor" stroke-width="2" fill="none" />
+                    <path d="M50 20 L50 80 M20 50 L80 50" stroke="currentColor" stroke-width="1" stroke-dasharray="2,2" />
+                </svg>
+            </div>
+            
+            <!-- スキャンビーム -->
+            <div class="scan-beam"></div>
+
+            <!-- グリッドオーバーレイ -->
+            <div class="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px] z-20"></div>
+        </div>
+
+        <div class="mt-8 text-center space-y-2">
+            <h2 class="text-3xl sm:text-4xl font-black text-pink-500 tracking-widest animate-pulse" style="text-shadow: 2px 2px 0px cyan;">SCANNING...</h2>
+            <p class="text-blue-300 font-mono text-sm sm:text-base">NEURAL SYNC: <span id="sync-rate">0</span>%</p>
+            <p class="text-xs text-gray-500 animate-pulse">Analyzing Synapse Patterns...</p>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        const apiKey = "";
+        let currentImageSrc = null; // 現在選択されている画像のソースを保持
+        let currentResults = [];    // 現在の結果を保持（シェア用）
+        let currentName = "";       // 現在の名前を保持（シェア用）
+
+        // 拡張された脳内キーワードリスト (カオス増量版)
+        const V_BRAIN_ELEMENTS = [
+            // ユーザーリクエスト
+            { name: "食", color: "#FF9966", neon: "#FFCC99" },
+            { name: "愛", color: "#FF6699", neon: "#FF99CC" },
+            { name: "ムフフ", color: "#FF33CC", neon: "#FF66FF" }, // "エロ"の代替
+            { name: "肉", color: "#CC3300", neon: "#FF6633" },
+            { name: "筋肉", color: "#CC6600", neon: "#FF9933" },
+            { name: "アフロ", color: "#663300", neon: "#996633" },
+            { name: "地獄", color: "#330000", neon: "#FF0000" },
+            { name: "キューティクル", color: "#FFCCFF", neon: "#FFFFFF" },
+            { name: "ししゃも", color: "#999966", neon: "#CCCC99" },
+            { name: "お魚", color: "#3399CC", neon: "#66CCFF" },
+            { name: "お金", color: "#FFD700", neon: "#FFFF33" },
+            { name: "AI", color: "#00CCFF", neon: "#33FFFF" },
+            { name: "おっぱい", color: "#FFCCCC", neon: "#FFEEEE" },
+            { name: "尻", color: "#FFCC99", neon: "#FFEebb" },
+            { name: "宇宙パワー", color: "#6600CC", neon: "#9933FF" },
+            { name: "受け", color: "#9999FF", neon: "#CCCCFF" },
+            { name: "攻め", color: "#6666CC", neon: "#9999FF" },
+            { name: "5G", color: "#00FF99", neon: "#33FFCC" },
+            { name: "自然", color: "#33CC33", neon: "#66FF66" },
+            { name: "電波", color: "#CC00FF", neon: "#FF33FF" },
+            { name: "世界平和", color: "#FFFFFF", neon: "#CCFFFF" },
+            { name: "カオス", color: "#333333", neon: "#999999" },
+            { name: "世界征服", color: "#660000", neon: "#FF3333" },
+            
+            // 以下追加要素
+            { name: "推し", color: "#FF3366", neon: "#FF6699" },
+            { name: "虚無", color: "#000000", neon: "#666666" },
+            { name: "ラーメン", color: "#FF9933", neon: "#FFCC66" },
+            { name: "猫吸い", color: "#FFCCFF", neon: "#FF99FF" },
+            { name: "犬", color: "#CC9966", neon: "#FFCC99" },
+            { name: "布団", color: "#FFFFFF", neon: "#E0E0E0" },
+            { name: "休日", color: "#00FF00", neon: "#66FF66" },
+            { name: "残業", color: "#000033", neon: "#333366" },
+            { name: "〆切", color: "#FF0000", neon: "#FF3333" },
+            { name: "承認欲求", color: "#FF00FF", neon: "#FF66FF" },
+            { name: "闇", color: "#1a1a1a", neon: "#4d4d4d" },
+            { name: "光", color: "#FFFFCC", neon: "#FFFFFF" },
+            { name: "希望", color: "#FFFF00", neon: "#FFFF66" },
+            { name: "絶望", color: "#000066", neon: "#333399" },
+            { name: "寿司", color: "#FF3333", neon: "#FF6666" },
+            { name: "サウナ", color: "#99CCFF", neon: "#CCEEFF" },
+            { name: "筋トレ", color: "#FF6600", neon: "#FF9933" },
+            { name: "プロテイン", color: "#FFFF99", neon: "#FFFFCC" },
+            { name: "爆発", color: "#FF3300", neon: "#FF6600" },
+            { name: "炎上", color: "#FF0000", neon: "#FF3333" },
+            { name: "友情", color: "#33CCFF", neon: "#66FFFF" },
+            { name: "課金", color: "#FFD700", neon: "#FFFF00" },
+            { name: "ガチャ", color: "#CC66FF", neon: "#FF99FF" },
+            { name: "爆死", color: "#333333", neon: "#666666" },
+            { name: "神引き", color: "#FFFFCC", neon: "#FFFFFF" },
+            { name: "尊い", color: "#FF99CC", neon: "#FFBBDD" },
+            { name: "しんどい", color: "#999999", neon: "#CCCCCC" },
+            { name: "無理", color: "#000000", neon: "#333333" },
+            { name: "好き", color: "#FF3366", neon: "#FF6699" },
+            { name: "嘘", color: "#660066", neon: "#993399" },
+            { name: "真実", color: "#FFFFFF", neon: "#CCFFFF" },
+            { name: "運命", color: "#FF00CC", neon: "#FF66FF" },
+            { name: "革命", color: "#FF0000", neon: "#FF6666" },
+            { name: "伝説", color: "#FFD700", neon: "#FFFF99" },
+            { name: "神", color: "#FFFFEE", neon: "#FFFFFF" },
+            { name: "悪魔", color: "#330033", neon: "#660066" },
+            { name: "天使", color: "#EEFFFF", neon: "#FFFFFF" },
+            { name: "異世界", color: "#9933CC", neon: "#CC66FF" },
+            { name: "転生", color: "#33CCCC", neon: "#66FFFF" },
+            { name: "チート", color: "#FF00FF", neon: "#FF66FF" },
+            { name: "ハーレム", color: "#FF6699", neon: "#FF99CC" },
+            { name: "純愛", color: "#FFCCCC", neon: "#FFFFFF" },
+            { name: "婚活", color: "#FF9999", neon: "#FFCCCC" },
+            { name: "貯金", color: "#CCCCCC", neon: "#EEEEEE" },
+            { name: "借金", color: "#333333", neon: "#666666" },
+            { name: "税金", color: "#000000", neon: "#333333" },
+            { name: "投資", color: "#339933", neon: "#66CC66" },
+            { name: "仮想通貨", color: "#FFCC00", neon: "#FFDD33" },
+            { name: "メタバース", color: "#3300CC", neon: "#6633FF" },
+            { name: "VR", color: "#00FFFF", neon: "#66FFFF" },
+            { name: "意識高い", color: "#003366", neon: "#336699" },
+            { name: "ドヤ顔", color: "#FF6633", neon: "#FF9966" },
+            { name: "変顔", color: "#99CC00", neon: "#CCFF33" },
+            { name: "笑顔", color: "#FFFF00", neon: "#FFFF66" },
+            { name: "定時退社", color: "#66FF66", neon: "#99FF99" },
+            { name: "有給", color: "#33FF33", neon: "#66FF66" },
+            { name: "二度寝", color: "#CCCCFF", neon: "#EEEEFF" },
+            { name: "夜食", color: "#996633", neon: "#CC9966" },
+            { name: "糖質", color: "#FFFFFF", neon: "#FFFFCC" },
+            { name: "脂質", color: "#FFFF66", neon: "#FFFFAA" },
+            { name: "カフェイン", color: "#663300", neon: "#996633" },
+            { name: "エナドリ", color: "#00FF00", neon: "#66FF00" },
+            { name: "論破", color: "#000099", neon: "#3333CC" },
+            { name: "マウント", color: "#660000", neon: "#993333" },
+            { name: "陰キャ", color: "#333366", neon: "#666699" },
+            { name: "陽キャ", color: "#FF9900", neon: "#FFBB33" },
+            { name: "パリピ", color: "#FF0099", neon: "#FF33CC" },
+            { name: "オタク", color: "#666666", neon: "#999999" },
+            { name: "尊死", color: "#CC99FF", neon: "#EECCFF" },
+            { name: "限界", color: "#330000", neon: "#660000" },
+            { name: "優勝", color: "#FFCC33", neon: "#FFEE66" },
+            { name: "天才", color: "#00CCFF", neon: "#66EEFF" },
+            { name: "ポンコツ", color: "#FF9966", neon: "#FFBB99" },
+            { name: "バブみ", color: "#FFCCFF", neon: "#FFEEFF" },
+            { name: "ママ", color: "#FF9999", neon: "#FFCCCC" },
+            { name: "パパ", color: "#6699FF", neon: "#99CCFF" },
+            { name: "石油王", color: "#333333", neon: "#666666" },
+            { name: "不労所得", color: "#FFFF00", neon: "#FFFF66" },
+            { name: "タピオカ", color: "#663300", neon: "#996633" },
+            { name: "マリトッツォ", color: "#FFFFFF", neon: "#FFFFEE" },
+            { name: "昭和", color: "#996633", neon: "#CC9966" },
+            { name: "平成", color: "#0033CC", neon: "#3366FF" },
+            { name: "令和", color: "#FFCCFF", neon: "#FFEEFF" },
+            { name: "ギャンブル", color: "#CC0000", neon: "#FF3333" },
+            { name: "宝くじ", color: "#FFCC00", neon: "#FFDD33" },
+            { name: "サボり", color: "#99CC99", neon: "#BBEEBB" },
+            { name: "誘惑", color: "#CC00CC", neon: "#FF33FF" },
+            { name: "煩悩", color: "#660066", neon: "#990099" },
+            { name: "悟り", color: "#FFFFFF", neon: "#EEFFFF" },
+            { name: "解脱", color: "#FFFFCC", neon: "#FFFFEE" },
+            { name: "もふもふ", color: "#FFCC99", neon: "#FFEEDD" },
+            { name: "ぷにぷに", color: "#FF99CC", neon: "#FFBBDD" },
+            { name: "ツンデレ", color: "#FF6600", neon: "#FF9933" },
+            { name: "ヤンデレ", color: "#990033", neon: "#CC0066" },
+            { name: "黒歴史", color: "#000000", neon: "#333333" }
+        ];
+
+        function showMessage(message, duration = 3000) {
+            const box = document.getElementById('message-box');
+            box.textContent = message;
+            box.classList.remove('hidden', 'bg-red-600', 'bg-green-600');
+            box.classList.add('bg-red-600');
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, duration);
+        }
+
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function(){
+                const output = document.getElementById('image-preview');
+                output.innerHTML = '';
+                currentImageSrc = reader.result; 
+                output.style.backgroundImage = `url(${reader.result})`;
+            }
+            if (event.target.files[0]) {
+                 reader.readAsDataURL(event.target.files[0]);
+            } else {
+                document.getElementById('image-preview').innerHTML = '<span class="text-xs text-gray-400">画像</span>';
+                document.getElementById('image-preview').style.backgroundImage = 'none';
+                currentImageSrc = null;
+            }
+        }
+
+        function startScan() {
+            const name = document.getElementById('vtuber-name').value.trim();
+            if (name === "") {
+                showMessage("名前を入力してください！");
+                return;
+            }
+            currentName = name;
+
+            const inputScreen = document.getElementById('input-screen');
+            const scanOverlay = document.getElementById('scan-overlay');
+            const scanTargetImg = document.getElementById('scan-target-img');
+            const mainContent = document.getElementById('main-content');
+            
+            // 入力画面を隠す
+            inputScreen.classList.add('hidden');
+            
+            // スキャン演出の準備
+            if (currentImageSrc) {
+                scanTargetImg.src = currentImageSrc;
+                scanTargetImg.style.display = 'block';
+            } else {
+                scanTargetImg.style.display = 'none'; 
+                // 画像がない場合のデフォルト背景色など
+                scanTargetImg.parentElement.style.backgroundColor = '#111';
+            }
+
+            // オーバーレイを表示
+            scanOverlay.classList.remove('hidden');
+            mainContent.classList.add('blur-bg');
+
+            // 進捗カウンターのアニメーション
+            let progress = 0;
+            const syncRate = document.getElementById('sync-rate');
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 5) + 2;
+                if (progress > 100) progress = 100;
+                syncRate.textContent = progress;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    finishScan(name);
+                }
+            }, 60); // 少し高速化
+        }
+
+        function finishScan(name) {
+            setTimeout(() => {
+                const scanOverlay = document.getElementById('scan-overlay');
+                const resultScreen = document.getElementById('result-screen');
+                const mainContent = document.getElementById('main-content');
+                
+                // オーバーレイを隠す
+                scanOverlay.classList.add('hidden');
+                mainContent.classList.remove('blur-bg');
+
+                // 結果生成と表示
+                const results = generateBrainComposition(name);
+                currentResults = results; // シェア用に保存
+                displayResults(name, results);
+                
+                // 結果画面を表示
+                resultScreen.classList.remove('hidden');
+                
+            }, 300);
+        }
+
+        function resetApp() {
+            // 結果画面を隠し、入力画面を表示
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('input-screen').classList.remove('hidden');
+            // 名前入力欄などはそのまま残す（連続でやり直しやすいように）
+        }
+
+        function generateBrainComposition(name) {
+            let seed = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 1000;
+            const pseudoRandom = () => {
+                seed = (seed * 9301 + 49297) % 233280;
+                return seed / 233280.0;
+            };
+
+            const composition = [];
+            let totalPercentage = 100;
+            
+            // 毎回ランダムにするために、シードに現在時刻(分)などを加えるか？
+            // いや、同じ名前なら同じ結果の方が「診断」っぽいので、名前ベースのままにする
+            
+            const shuffledElements = [...V_BRAIN_ELEMENTS].sort(() => pseudoRandom() - 0.5);
+            // 要素数を少し増やす (6-9個)
+            const numElements = Math.floor(pseudoRandom() * 4) + 6;
+            const selectedElements = shuffledElements.slice(0, numElements);
+
+            for (let i = 0; i < selectedElements.length; i++) {
+                let percentage;
+                if (i === selectedElements.length - 1) {
+                    percentage = totalPercentage;
+                } else {
+                    const max = Math.min(totalPercentage * 0.6, totalPercentage - (selectedElements.length - 1 - i) * 5);
+                    percentage = Math.max(5, Math.floor(pseudoRandom() * (max - 5 + 1)) + 5);
+                }
+                
+                composition.push({
+                    name: selectedElements[i].name,
+                    percentage: percentage,
+                    color: selectedElements[i].color,
+                    neon: selectedElements[i].neon,
+                    // サイズ計算調整
+                    size: Math.sqrt(percentage) * 16 + 35, 
+                });
+
+                totalPercentage -= percentage;
+            }
+
+            // 合計調整
+            if (composition.length > 0) {
+                const finalSum = composition.reduce((sum, item) => sum + item.percentage, 0);
+                composition[0].percentage += (100 - finalSum);
+                composition[0].size = Math.sqrt(composition[0].percentage) * 16 + 35;
+            }
+
+            return composition.sort((a, b) => b.percentage - a.percentage);
+        }
+
+        function displayResults(name, results) {
+            const titleElement = document.getElementById('result-title');
+            const listElement = document.getElementById('result-list');
+            const brainElement = document.getElementById('result-brain');
+
+            titleElement.textContent = `${name} の脳内`;
+            listElement.innerHTML = '';
+            brainElement.innerHTML = '';
+
+            // 背景画像のセット
+            if (currentImageSrc) {
+                brainElement.style.backgroundImage = `url(${currentImageSrc})`;
+                // 画像があるときは少し暗くして文字を見やすくする
+                brainElement.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                brainElement.style.backgroundBlendMode = 'overlay';
+            } else {
+                brainElement.style.backgroundImage = 'none';
+                brainElement.style.backgroundColor = '#111';
+                brainElement.style.backgroundBlendMode = 'normal';
+            }
+
+            // リスト生成
+            results.forEach(item => {
+                const listItem = document.createElement('div');
+                listItem.className = 'flex justify-between items-center p-2 rounded-lg bg-gray-700/50 hover:bg-gray-700 transition';
+                listItem.innerHTML = `
+                    <span class="text-base font-medium flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full shadow-[0_0_5px_currentColor]" style="background-color: ${item.color}; color: ${item.neon}"></span>
+                        ${item.name}
+                    </span>
+                    <span class="text-xl font-bold" style="color: ${item.neon}; text-shadow: 0 0 5px ${item.color};">${item.percentage}%</span>
+                `;
+                listElement.appendChild(listItem);
+            });
+
+            // 脳内バブル生成
+            const brainRadius = 140; // width 280 / 2
+            let angle = 0;
+            
+            results.forEach((item, index) => {
+                const element = document.createElement('div');
+                element.className = 'brain-element';
+                
+                // バブルのスタイル
+                element.style.width = `${item.size}px`;
+                element.style.height = `${item.size}px`;
+                element.style.backgroundColor = `rgba(${hexToRgb(item.color)}, 0.65)`; // 半透明
+                element.style.color = '#fff';
+                // ネオンボーダー
+                element.style.border = `2px solid ${item.neon}`;
+                element.style.boxShadow = `0 0 15px ${item.color}, inset 0 0 10px rgba(0,0,0,0.2)`;
+                
+                // 中身
+                element.innerHTML = `
+                    <span style="font-size: ${Math.max(10, item.size / 3.5)}px;">${item.name}</span>
+                    <span style="font-size: ${Math.max(9, item.size / 4.5)}px; opacity: 0.9;">${item.percentage}%</span>
+                `;
+
+                // 配置ロジック
+                // 少しランダム性を増す
+                const radiusOffset = 0.2 + (Math.random() * 0.6) * (1 - item.size / (brainRadius * 2));
+                const distance = Math.min(brainRadius - item.size / 2 - 5, brainRadius * radiusOffset);
+                
+                // 角度計算
+                const sectorSize = 360 / results.length;
+                const randomAngle = angle + (Math.random() * sectorSize * 0.8); 
+                
+                const x = Math.cos(randomAngle * (Math.PI / 180)) * distance;
+                const y = Math.sin(randomAngle * (Math.PI / 180)) * distance;
+                
+                element.style.left = `${brainRadius + x - item.size / 2}px`;
+                element.style.top = `${brainRadius + y - item.size / 2}px`;
+                element.style.zIndex = 100 - index; 
+
+                brainElement.appendChild(element);
+                
+                angle += sectorSize;
+            });
+        }
+        
+        // ヘルパー: Hex to RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? 
+                `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` 
+                : '0,0,0';
+        }
+
+        // X (Twitter) シェア機能
+        function shareOnTwitter() {
+            if (!currentResults || currentResults.length === 0) return;
+            
+            // 上位3つの要素を抽出
+            const top3 = currentResults.slice(0, 3).map(r => `${r.name}(${r.percentage}%)`).join('、');
+            
+            const text = `${currentName} の脳内は…\n\n${top3} などで構成されています！\n\n#ネオ脳内スキャンメーカー\n`;
+            const url = "https://websim.ai/@gemini/vtuber-brain-scan-maker"; // ここは実際のデプロイURLを入れるべき場所ですが、プレースホルダーとしておきます
+            
+            const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`;
+            
+            window.open(tweetUrl, '_blank');
+        }
+        
+        // 初期化
+        window.onload = () => {
+            const nameInput = document.getElementById('vtuber-name');
+            nameInput.value = "ネオクリエイター";
+            // スキャンは自動スタートしない（入力画面から始める）
+        };
+
+    </script>
+</body>
+</html>
